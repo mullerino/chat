@@ -4,12 +4,18 @@ import { Lock, Mail, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/context/AuthContext";
+import { toast } from "sonner";
+import { LoadingOverlay } from "@/components/LoadingOverlay";
+import { useRouter } from "next/navigation";
 
-export function Login() {
-  const { user, appUser, register, login } = useAuth();
+export default function Login() {
+  const { user, loading, register, login } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
-    console.log(user, appUser);
+    if (user) {
+      router.push("/chat");
+    }
   }, [user]);
 
   const [isLogin, setisLogin] = useState(true);
@@ -27,15 +33,21 @@ export function Login() {
 
   const handleLogin = async () => {
     await login({ email, password });
+    toast.success("Logado com sucesso!");
+    router.push("/chat");
   };
 
   const handleRegister = async () => {
     await register({ name, email, password });
+    toogleLoginMode();
+    toast.success("Cadastrado com sucesso!");
   };
 
   return (
-    <div className="to-primary-dark flex h-screen w-full flex-col items-center justify-center bg-gradient-to-br from-primary">
-      <div className="flex w-full max-w-md flex-col items-center rounded-lg bg-surface p-12 shadow-lg">
+    <div className="flex h-screen w-full flex-col items-center justify-center bg-gradient-to-br from-primary to-primary-dark">
+      <div className="relative flex w-full max-w-md flex-col items-center rounded-lg bg-surface p-12 shadow-lg">
+        {loading && <LoadingOverlay />}
+
         <AnimatePresence mode="wait">
           <motion.div
             key={isLogin ? "login" : "register"}
@@ -79,7 +91,7 @@ export function Login() {
                 onChange={(e) => setPassowrd(e.target.value)}
               />
 
-              <p className="text-text-secondary mt-4 text-center text-sm">
+              <p className="mt-4 text-center text-sm text-text-secondary">
                 {isLogin ? "Não possui sua conta?" : "Ja possui uma conta?"}{" "}
                 <a
                   className="cursor-pointer font-medium text-primary hover:underline"
@@ -91,7 +103,7 @@ export function Login() {
 
               <button
                 type="button"
-                className="hover:bg-primary-dark mt-4 rounded-md bg-primary px-4 py-2 text-sm font-medium text-white transition"
+                className="mt-4 rounded-md bg-primary px-4 py-2 text-sm font-medium text-white transition hover:bg-primary-dark"
                 onClick={submitForm}
               >
                 {isLogin ? "Entrar" : "Cadastrar"}
