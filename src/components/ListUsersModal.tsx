@@ -19,9 +19,14 @@ export default function ListUsersModal({
   const [users, setUsers] = useState<AppUserProps[]>([]);
 
   useEffect(() => {
-    if (isOpen && appUser?.uid) {
-      getAllAppUsers(appUser.uid).then(setUsers);
-    }
+    const fetchUsers = async () => {
+      if (isOpen && appUser?.uid) {
+        const users = await getAllAppUsers(appUser.uid);
+        setUsers(users);
+      }
+    };
+
+    fetchUsers();
   }, [isOpen, userLogged]);
 
   if (!isOpen) return null;
