@@ -3,6 +3,8 @@ import { Input } from "./Input";
 import ChatItem from "./ChatItem";
 import { useState } from "react";
 import ListUsersModal from "./ListUsersModal";
+import { useAuth } from "@/context/AuthContext";
+import { createChatWithUser } from "@/services/firestore/chatService";
 
 export default function Sidebar() {
   const { appUser } = useAuth();
