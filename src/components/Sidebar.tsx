@@ -5,6 +5,7 @@ import { useState } from "react";
 import ListUsersModal from "./ListUsersModal";
 
 export default function Sidebar() {
+  const { appUser } = useAuth();
   const [modalOpen, setModalOpen] = useState(false);
 
   const handleModal = () => {
@@ -42,8 +43,12 @@ export default function Sidebar() {
       <ListUsersModal
         isOpen={modalOpen}
         onClose={handleModal}
-        onSelectUser={(selectedUser) => {
-          console.log(selectedUser);
+        onSelectUser={async (selectedUser) => {
+          if (!appUser) {
+            return;
+          }
+
+          await createChatWithUser(appUser, selectedUser);
           handleModal();
         }}
       />
