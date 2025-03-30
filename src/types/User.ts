@@ -8,6 +8,8 @@ export interface AppUserProps {
   createdAt: Timestamp
 }
 
+export type NewAppUserProps = Omit<AppUserProps, 'createdAt'>;
+
 export interface LoginProps {
   email: string
   password: string
