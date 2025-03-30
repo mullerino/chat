@@ -1,19 +1,28 @@
-import { createContext, ReactNode, useContext, useState } from "react";
+"use client";
+
 import {
-  User,
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut,
-} from "firebase/auth";
-import { AppUserProps, createUserProps, LoginProps } from "@/types/user";
-import { auth, firestore } from "@/lib/firebase";
-import { translateFirebaseError } from "@/utils/translateFirebaseError";
-import { toast } from "sonner";
-import { doc, serverTimestamp, setDoc, Timestamp } from "firebase/firestore";
+  createContext,
+  ReactNode,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
+import { User } from "firebase/auth";
+import { createUserProps, LoginProps, NewAppUserProps } from "@/types/User";
+import {
+  listenToAuthChanges,
+  loginUser,
+  logoutUser,
+  registerUser,
+} from "@/services/firestore/authService";
+import {
+  createAppUserDoc,
+  getAppUserDoc,
+} from "@/services/firestore/userService";
 
 interface AuthContextProps {
   user: User | null;
-  appUser: AppUserProps | null;
+  appUser: NewAppUserProps | null;
   loading: boolean;
   login: ({ email, password }: LoginProps) => Promise<void>;
   register: ({ name, email, password }: createUserProps) => Promise<void>;
@@ -24,52 +33,53 @@ const AuthContext = createContext<AuthContextProps | null>(null);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [appUser, setAppUser] = useState<AppUserProps | null>(null);
+  const [appUser, setAppUser] = useState<NewAppUserProps | null>(null);
   const [loading, setLoading] = useState(true);
 
+  useEffect(() => {
+    const unsubscribe = listenToAuthChanges(async (user) => {
+      if (user) {
+        setUser(user);
+        const appUser = await getAppUserDoc(user.uid);
+        setAppUser(appUser);
+      } else {
+        setUser(null);
+        setUser(null);
+      }
+
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
   const register = async ({ name, email, password }: createUserProps) => {
-    try {
-      const createdUser = await createUserWithEmailAndPassword(
-        auth,
-        email,
-        password,
-      );
+    setLoading(true);
+    const newUser = await registerUser(email, password);
 
-      const uid = createdUser.user.uid;
+    const uid = newUser.uid;
+    const newAppUser: NewAppUserProps = {
+      uid,
+      nome: name,
+      email,
+      status: "online",
+    };
 
-      const newUser: AppUserProps = {
-        uid,
-        nome: name,
-        email,
-        status: "online",
-        createdAt: serverTimestamp() as Timestamp,
-      };
-
-      await setDoc(doc(firestore, "users", uid), newUser);
-      setAppUser(newUser);
-      setUser(createdUser.user);
-    } catch (err: any) {
-      const message = translateFirebaseError(err.code || err.message);
-      toast.error(message);
-      throw err;
-    }
+    await createAppUserDoc(newAppUser);
+    setLoading(false);
   };
 
   const login = async ({ email, password }: LoginProps) => {
-    try {
-      const result = await signInWithEmailAndPassword(auth, email, password);
-      const firebaseUser: User = result.user;
+    setLoading(true);
+    const { appUser, firebaseUser } = await loginUser({ email, password });
 
-      setUser(firebaseUser);
-    } catch (err: any) {
-      const message = translateFirebaseError(err.code || err.message);
-      toast.error(message);
-      throw err;
-    }
+    setUser(firebaseUser);
+    setAppUser(appUser);
+    setLoading(false);
   };
 
   const logout = async () => {
-    signOut(auth);
+    await logoutUser();
   };
 
   return (
