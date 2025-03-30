@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { Toaster } from "sonner";
+import { ClientProviders } from "@/components/ClientProviders";
 
 export const metadata: Metadata = {
   title: "Chat online",
@@ -15,8 +15,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`font-sans antialiased`}>
-        <Toaster richColors position="top-right" />
-        {children}
+        <ClientProviders>{children}</ClientProviders>
       </body>
     </html>
   );
