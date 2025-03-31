@@ -8,7 +8,12 @@ import {
   useState,
 } from "react";
 import { User } from "firebase/auth";
-import { createUserProps, LoginProps, NewAppUserProps } from "@/types/User";
+import {
+  AppUserProps,
+  createUserProps,
+  LoginProps,
+  NewAppUserProps,
+} from "@/types/User";
 import {
   listenToAuthChanges,
   loginUser,
@@ -22,7 +27,7 @@ import {
 
 interface AuthContextProps {
   user: User | null;
-  appUser: NewAppUserProps | null;
+  appUser: AppUserProps | null;
   loading: boolean;
   login: ({ email, password }: LoginProps) => Promise<void>;
   register: ({ name, email, password }: createUserProps) => Promise<void>;
@@ -33,7 +38,7 @@ const AuthContext = createContext<AuthContextProps | null>(null);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [appUser, setAppUser] = useState<NewAppUserProps | null>(null);
+  const [appUser, setAppUser] = useState<AppUserProps | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
