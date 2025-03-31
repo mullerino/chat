@@ -7,7 +7,7 @@ export interface ChatProps {
   unreadCountByUser: Record<string, number>;
   lastMessage: string;
   lastMessageSender: string;
-  lastMessageTime: Timestamp;
+  lastMessageTime: Timestamp | null;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
