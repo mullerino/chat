@@ -3,12 +3,16 @@ import { Input } from "./Input";
 import ChatItem from "./ChatItem";
 import { useState } from "react";
 import ListUsersModal from "./ListUsersModal";
-import { useAuth } from "@/context/AuthContext";
-import { createChatWithUser } from "@/services/firestore/chatService";
+import { AppUserProps } from "@/types/User";
+import { useChat } from "@/context/ChatContext";
 
-export default function Sidebar() {
-  const { appUser } = useAuth();
+interface SidebarProps {
+  handleOtherUser: (user: AppUserProps) => void;
+}
+
+export default function Sidebar({ handleOtherUser }: SidebarProps) {
   const [modalOpen, setModalOpen] = useState(false);
+  const { chats } = useChat();
 
   const handleModal = () => {
     setModalOpen(!modalOpen);
@@ -33,24 +37,29 @@ export default function Sidebar() {
       </div>
 
       <div className="mt-2 flex-1 space-y-1 overflow-y-auto pr-1">
-        <ChatItem />
-        <ChatItem />
-        <ChatItem />
-
-        {/* <p className="text-sm italic text-text-secondary">
-          Nenhum chat encontrado
-        </p> */}
+        {chats ? (
+          chats.map((chat) => {
+            return (
+              <ChatItem
+                key={chat.id}
+                name={chat.id}
+                timestamp={chat.lastMessageTime}
+                lastMessage={chat.lastMessage}
+              />
+            );
+          })
+        ) : (
+          <p className="text-sm italic text-text-secondary">
+            Nenhum chat encontrado
+          </p>
+        )}
       </div>
 
       <ListUsersModal
         isOpen={modalOpen}
         onClose={handleModal}
-        onSelectUser={async (selectedUser) => {
-          if (!appUser) {
-            return;
-          }
-
-          await createChatWithUser(appUser, selectedUser);
+        onSelectUser={(selectedUser) => {
+          handleOtherUser(selectedUser);
           handleModal();
         }}
       />
