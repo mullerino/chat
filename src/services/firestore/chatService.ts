@@ -4,7 +4,7 @@ import { chatConverter } from "../firebase/converter/chatConverter"
 import { ChatProps } from "@/types/Chat"
 import { AppUserProps } from "@/types/User"
 
-const chatRef = (chatId: string) => {
+export const chatRef = (chatId: string) => {
   return doc(firestore, "chats", chatId).withConverter(chatConverter)
 }
 
@@ -22,7 +22,7 @@ export const createChat = async (chat: ChatProps): Promise<ChatProps> => {
   return chat;
 }
 
-export const createChatWithUser = async (appUser: AppUserProps, selectedUser: AppUserProps): Promise<void> => {
+export const createChatWithUser = async (appUser: AppUserProps, selectedUser: AppUserProps): Promise<ChatProps> => {
   const chatId = [appUser.uid, selectedUser.uid].sort().join("_");
 
   const chat: ChatProps = {
@@ -43,7 +43,8 @@ export const createChatWithUser = async (appUser: AppUserProps, selectedUser: Ap
     updatedAt: serverTimestamp() as Timestamp
   }
 
-  await createChat(chat)
+  const newChat = await createChat(chat)
+  return newChat
 }
 
 export const getAllChatsUser = async (userUid: string) => {
