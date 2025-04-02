@@ -1,22 +1,43 @@
 import { Search } from "lucide-react";
 import { Input } from "./Input";
 import ChatItem from "./ChatItem";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import ListUsersModal from "./ListUsersModal";
-import { AppUserProps } from "@/types/User";
 import { useChat } from "@/context/ChatContext";
+import { getAppUserDoc } from "@/services/firestore/userService";
 
-interface SidebarProps {
-  handleOtherUser: (user: AppUserProps) => void;
-}
+export default function Sidebar() {
+  const { changeOtherUser, chats, selectChat } = useChat();
 
-export default function Sidebar({ handleOtherUser }: SidebarProps) {
   const [modalOpen, setModalOpen] = useState(false);
-  const { chats } = useChat();
+  const [usernames, setUsernames] = useState<{ [key: string]: string }>({});
 
   const handleModal = () => {
     setModalOpen(!modalOpen);
   };
+
+  const convertUidToUsername = async (userId: string) => {
+    const user = await getAppUserDoc(userId);
+    return user.nome;
+  };
+
+  useEffect(() => {
+    const fetchUsernames = async () => {
+      const usernamesMap: { [key: string]: string } = {};
+
+      await Promise.all(
+        chats.map(async (chat) => {
+          const userId = chat.users[1];
+          const username = await convertUidToUsername(userId);
+          usernamesMap[chat.id] = username;
+        }),
+      );
+
+      setUsernames(usernamesMap);
+    };
+
+    fetchUsernames();
+  }, [chats]);
 
   return (
     <aside className="flex h-[80vh] w-96 flex-col gap-6 rounded-lg bg-surface p-6 shadow-sm">
@@ -37,16 +58,20 @@ export default function Sidebar({ handleOtherUser }: SidebarProps) {
       </div>
 
       <div className="mt-2 flex-1 space-y-1 overflow-y-auto pr-1">
-        {chats ? (
+        {chats.length !== 0 ? (
           chats.map((chat) => {
-            return (
-              <ChatItem
-                key={chat.id}
-                name={chat.id}
-                timestamp={chat.lastMessageTime}
-                lastMessage={chat.lastMessage}
-              />
-            );
+            if (chat.lastMessage) {
+              const username = usernames[chat.id] || "Carregando...";
+              return (
+                <ChatItem
+                  key={chat.id}
+                  name={username}
+                  timestamp={chat.lastMessageTime}
+                  lastMessage={chat.lastMessage}
+                  onClick={() => selectChat(chat)}
+                />
+              );
+            }
           })
         ) : (
           <p className="text-sm italic text-text-secondary">
@@ -59,7 +84,7 @@ export default function Sidebar({ handleOtherUser }: SidebarProps) {
         isOpen={modalOpen}
         onClose={handleModal}
         onSelectUser={(selectedUser) => {
-          handleOtherUser(selectedUser);
+          changeOtherUser(selectedUser);
           handleModal();
         }}
       />
