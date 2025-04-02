@@ -1,25 +1,34 @@
 import { Info, Send } from "lucide-react";
 import { ChatMessages } from "./ChatMessages";
 import { Input } from "./Input";
-import { AppUserProps } from "@/types/User";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useChat } from "@/context/ChatContext";
 import Typing from "./Typing";
+import { useAuth } from "@/context/AuthContext";
+import { useTypingStatus } from "@/hooks/useTypingStatus";
 
-interface ChatBoxProps {
-  otherUser: AppUserProps | null;
-}
+export function ChatBox() {
+  const { appUser } = useAuth();
+  const { otherUser, messages, sendMessage, selectedChat } = useChat();
 
-export function ChatBox({ otherUser }: ChatBoxProps) {
-  const { messages, sendMessage, isTyping } = useChat();
   const [message, setMessage] = useState("");
+  const { startTyping, stopTyping } = useTypingStatus(selectedChat);
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && message.trim()) {
-      sendMessage(message);
-      setMessage("");
-    }
+  const handleTypingChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setMessage(e.target.value);
+    startTyping();
   };
+
+  const handleSendMessage = () => {
+    if (!message.trim() || !selectedChat) return;
+
+    sendMessage(message);
+    setMessage("");
+    stopTyping();
+  };
+
+  const otherUserId = selectedChat?.users.find((id) => id !== appUser?.uid);
+  const isOtherUserTyping = selectedChat?.typing?.[otherUserId ?? ""] || false;
 
   return (
     <div className="flex h-[80vh] flex-1 flex-col gap-6 rounded-lg bg-surface shadow-sm">
@@ -48,20 +57,23 @@ export function ChatBox({ otherUser }: ChatBoxProps) {
 
       <ChatMessages messages={messages} />
 
-      <Typing isTyping={false} />
+      {isOtherUserTyping && (
+        <Typing isTyping={true} userName={otherUser?.nome} />
+      )}
 
       <div className="mb-4 px-2">
         <Input
           type="text"
           placeholder="Mensagem"
-          onChange={(e) => setMessage(e.target.value)}
-          onKeyDown={handleKeyDown}
+          onChange={(e) => handleTypingChange(e)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") handleSendMessage();
+          }}
           value={message}
           rightIcon={
             <button
               onClick={() => {
-                sendMessage(message);
-                setMessage("");
+                handleSendMessage();
               }}
               className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-white transition hover:bg-primary-dark"
             >
