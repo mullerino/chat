@@ -3,10 +3,10 @@
 import Message from "./Message";
 import { useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageProps } from "@/types/Message";
+import { MessageFirebaseProps } from "@/types/Message";
 
 interface ChatMessagesProps {
-  messages: MessageProps[];
+  messages: MessageFirebaseProps[];
 }
 
 export function ChatMessages({ messages }: ChatMessagesProps) {
@@ -30,7 +30,9 @@ export function ChatMessages({ messages }: ChatMessagesProps) {
             <Message
               text={msg.text}
               time={msg.time}
-              isOwnMessage={msg.isOwnMessage}
+              id={msg.id}
+              senderId={msg.senderId}
+              status={msg.status}
             />
           </motion.div>
         ))}
