@@ -1,5 +1,5 @@
 import { firestore } from "@/lib/firebase"
-import { collection, doc, DocumentData, getDoc, getDocs, onSnapshot, query, QuerySnapshot, serverTimestamp, setDoc, Timestamp, where } from "firebase/firestore"
+import { collection, doc, DocumentData, getDoc, getDocs, onSnapshot, query, QuerySnapshot, serverTimestamp, setDoc, Timestamp, updateDoc, where } from "firebase/firestore"
 import { chatConverter } from "../firebase/converter/chatConverter"
 import { ChatProps } from "@/types/Chat"
 import { AppUserProps } from "@/types/User"
@@ -54,6 +54,14 @@ export const getAllChatsUser = async (userUid: string) => {
   return snapshot.docs.map((doc) => doc.data())
 }
 
+export const updateTypingUser = async (userUid: string, chat: ChatProps, isTyping: boolean) => {
+  const ref = chatRef(chat.id)
+
+  await updateDoc(ref, {
+    [`typing.${userUid}`] : isTyping
+  })
+}
+
 export const listenChatsUser = (userUid: string, callback: (chats: ChatProps[]) => void) => {
   const q = query(chatCollectionConverted, where("users", "array-contains", userUid))
 
@@ -63,7 +71,8 @@ export const listenChatsUser = (userUid: string, callback: (chats: ChatProps[]) 
       ...doc.data()
     })) as ChatProps[]
 
-    callback(chats)
+    callback(chats);
+
   })
 
   return unsubscribe
