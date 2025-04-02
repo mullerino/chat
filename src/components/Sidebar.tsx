@@ -5,9 +5,11 @@ import { useEffect, useState } from "react";
 import ListUsersModal from "./ListUsersModal";
 import { useChat } from "@/context/ChatContext";
 import { getAppUserDoc } from "@/services/firestore/userService";
+import { useAuth } from "@/context/AuthContext";
 
 export default function Sidebar() {
-  const { changeOtherUser, chats, selectChat } = useChat();
+  const { appUser } = useAuth();
+  const { changeOtherUser, chats, selectChat, createChat } = useChat();
 
   const [modalOpen, setModalOpen] = useState(false);
   const [usernames, setUsernames] = useState<{ [key: string]: string }>({});
@@ -27,9 +29,12 @@ export default function Sidebar() {
 
       await Promise.all(
         chats.map(async (chat) => {
-          const userId = chat.users[1];
-          const username = await convertUidToUsername(userId);
-          usernamesMap[chat.id] = username;
+          const userId = chat.users.find((id) => id !== appUser?.uid);
+
+          if (userId) {
+            const username = await convertUidToUsername(userId);
+            usernamesMap[chat.id] = username;
+          }
         }),
       );
 
@@ -84,6 +89,7 @@ export default function Sidebar() {
         isOpen={modalOpen}
         onClose={handleModal}
         onSelectUser={(selectedUser) => {
+          createChat(selectedUser);
           changeOtherUser(selectedUser);
           handleModal();
         }}
