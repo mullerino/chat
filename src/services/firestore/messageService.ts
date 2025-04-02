@@ -1,15 +1,14 @@
 import { firestore } from "@/lib/firebase"
-import { addDoc, collection, doc, getDocs, query, setDoc, Timestamp, updateDoc } from "firebase/firestore"
+import { addDoc, collection, DocumentData, getDocs, onSnapshot, orderBy, query, QuerySnapshot, Timestamp, updateDoc } from "firebase/firestore"
 import { messageConverter } from "../firebase/converter/messageConverter"
 import { MessageFirebaseProps, SendMessageProps } from "@/types/Message"
 import { chatRef } from "./chatService"
-import { ChatProps } from "@/types/Chat"
 
 const messageCollection = (chatId: string) => {
   return collection(firestore, "chats", chatId, "messages").withConverter(messageConverter)
 }
 
-export const sendMessage = async ({ message, chatId, user }: SendMessageProps) => {
+export const sendMessage = async ({ message, chatId, user }: SendMessageProps): Promise<MessageFirebaseProps>=> {
   const ref = messageCollection(chatId)
 
   const newMessage = {
@@ -23,25 +22,42 @@ export const sendMessage = async ({ message, chatId, user }: SendMessageProps) =
 
   const chatReference = chatRef(chatId)
 
-  updateDoc(chatReference, {
+  await updateDoc(chatReference, {
     lastMessage: message,
     lastMessageSender: user.uid,
     lastMessageTime: Timestamp.now() 
   })
+
+  return newMessage as MessageFirebaseProps
 };
 
-export const getMessages = async (chatId: string): Promise<MessageFirebaseProps[]>=> {
-  // pegar referencia da collection 
-  // fazer query para buscar todas as mensagens
-  // puxo as mensagens com getDocs passando a query
-  // retornar mensagens em forma de lista
+export const getMessages = async (chatId: string | undefined): Promise<MessageFirebaseProps[]> => {
+  if(chatId) {
+    const collectionRef = messageCollection(chatId)
+    const q = query(collectionRef, orderBy("time", "asc"))
+  
+    const snapshot = await getDocs(q)
+  
+    const messages = snapshot.docs.map((doc) => doc.data())
+  
+    return messages
+  }
 
+  return []
+}
+
+export const listenMessages = (chatId: string, callback: (messages: MessageFirebaseProps[]) => void) => {
   const collectionRef = messageCollection(chatId)
-  const q = query(collectionRef)
+  const q = query(collectionRef, orderBy("time", "asc"))
 
-  const snapshot = await getDocs(q)
+  const unsubscribe = onSnapshot(q, (snapshot: QuerySnapshot<DocumentData>) => {
+    const messages: MessageFirebaseProps[] = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data()
+    })) as MessageFirebaseProps[]
 
-  const messages = snapshot.docs.map((doc) => doc.data())
+    callback(messages)
+  })
 
-  return messages
+  return unsubscribe
 }
