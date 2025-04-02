@@ -1,9 +1,8 @@
 import { motion } from "framer-motion";
 
 interface TypingProps {
-  isTyping?: boolean;
-  userName?: string;
-  imageUrl?: string;
+  isTyping: boolean;
+  userName: string | undefined;
 }
 
 const TypingDots = () => {
@@ -44,7 +43,7 @@ const TypingDots = () => {
   );
 };
 
-export default function Typing({ isTyping, userName, imageUrl }: TypingProps) {
+export default function Typing({ isTyping, userName }: TypingProps) {
   if (!isTyping) {
     return null;
   }
@@ -53,10 +52,7 @@ export default function Typing({ isTyping, userName, imageUrl }: TypingProps) {
     <div className="ml-6 flex h-8 items-center gap-1 text-sm text-text-secondary">
       <img
         className="h-6 w-6 rounded-full object-cover"
-        src={
-          imageUrl ||
-          "https://ui-avatars.com/api/?name=Gabi&background=5D5FEF&color=fff"
-        }
+        src={`https://ui-avatars.com/api/?name=${userName}&background=5D5FEF&color=fff`}
         alt={userName}
       />
       <span className="text-3xl opacity-70">
