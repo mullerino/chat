@@ -1,6 +1,8 @@
 import { Timestamp } from "firebase/firestore";
 
-export const formatTime = (timestamp: Timestamp) => {
+export const formatTime = (timestamp: Timestamp | null) => {
+  if(!timestamp) return 
+  
   const date = timestamp.toDate();
   const hours = date.getHours();
   const minutes = date.getMinutes();
