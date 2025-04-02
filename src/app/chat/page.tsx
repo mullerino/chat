@@ -3,15 +3,10 @@ import { ChatBox } from "@/components/ChatBox";
 import { PrivateRoute } from "@/components/PrivateRoute";
 import Sidebar from "@/components/Sidebar";
 import { useAuth } from "@/context/AuthContext";
-import { useChat } from "@/context/ChatContext";
-import { getAppUserDoc } from "@/services/firestore/userService";
-import { AppUserProps } from "@/types/User";
 import { LogOut, User } from "lucide-react";
-import { useEffect, useState } from "react";
 
 export default function Chat() {
   const { appUser, logout } = useAuth();
-  const { otherUser, createChat } = useChat();
 
   return (
     <PrivateRoute>
@@ -30,7 +25,7 @@ export default function Chat() {
         </header>
         <main className="flex flex-1 flex-row items-center justify-center gap-4 p-8">
           <Sidebar />
-          <ChatBox otherUser={otherUser} />
+          <ChatBox />
         </main>
       </div>
     </PrivateRoute>
