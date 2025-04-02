@@ -4,14 +4,22 @@ import { Input } from "./Input";
 import { AppUserProps } from "@/types/User";
 import { useState } from "react";
 import { useChat } from "@/context/ChatContext";
+import Typing from "./Typing";
 
 interface ChatBoxProps {
-  otherUser: AppUserProps | undefined;
+  otherUser: AppUserProps | null;
 }
 
 export function ChatBox({ otherUser }: ChatBoxProps) {
+  const { messages, sendMessage, isTyping } = useChat();
   const [message, setMessage] = useState("");
-  const { sendMessage } = useChat();
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && message.trim()) {
+      sendMessage(message);
+      setMessage("");
+    }
+  };
 
   return (
     <div className="flex h-[80vh] flex-1 flex-col gap-6 rounded-lg bg-surface shadow-sm">
@@ -38,16 +46,23 @@ export function ChatBox({ otherUser }: ChatBoxProps) {
 
       <div className="border border-border"></div>
 
-      <ChatMessages messages={[]} />
+      <ChatMessages messages={messages} />
+
+      <Typing isTyping={false} />
 
       <div className="mb-4 px-2">
         <Input
           type="text"
           placeholder="Mensagem"
           onChange={(e) => setMessage(e.target.value)}
+          onKeyDown={handleKeyDown}
+          value={message}
           rightIcon={
             <button
-              onClick={() => sendMessage(message)}
+              onClick={() => {
+                sendMessage(message);
+                setMessage("");
+              }}
               className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-white transition hover:bg-primary-dark"
             >
               <Send size={16} />
