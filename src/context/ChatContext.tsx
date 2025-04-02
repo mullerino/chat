@@ -11,6 +11,7 @@ import { useAuth } from "./AuthContext";
 import {
   createChatWithUser,
   listenChatsUser,
+  updateTypingUser,
 } from "@/services/firestore/chatService";
 import {
   listenMessages,
@@ -30,7 +31,7 @@ interface ChatContextProps {
   createChat: (targetUser: AppUserProps) => Promise<void>;
   selectChat: (chat: ChatProps) => void;
   sendMessage: (message: string) => void;
-  setTyping: (status: boolean) => void;
+  setTyping: (selectedChat: ChatProps | null, isTyping: boolean) => void;
 }
 
 const ChatContext = createContext<ChatContextProps | null>(null);
@@ -46,6 +47,15 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
   const [unreadCount, setUnreadCount] = useState<{
     [chatId: string]: number;
   }>();
+
+  useEffect(() => {
+    if (!appUser?.uid) return;
+
+    setSelectedChat(null);
+    setMessages([]);
+    setIsTyping(false);
+    setOtherUser(null);
+  }, [appUser?.uid]);
 
   useEffect(() => {
     if (selectedChat) {
@@ -65,14 +75,28 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
 
     const unsubscribe = listenChatsUser(appUser.uid, (chatsUser) => {
       setChats(chatsUser);
-
-      if (chatsUser.length !== 0 && !selectedChat) {
-        setSelectedChat(chatsUser[0]);
-      }
     });
 
     return () => unsubscribe();
-  }, [selectedChat, appUser?.uid]);
+  }, [appUser?.uid]);
+
+  useEffect(() => {
+    if (!selectedChat && chats.length > 0) {
+      setSelectedChat(chats[0]);
+    }
+  }, [chats, selectedChat]);
+
+  useEffect(() => {
+    if (!selectedChat || chats.length === 0) return;
+
+    const updatedChat = chats.find((c) => c.id === selectedChat.id);
+    if (
+      updatedChat &&
+      JSON.stringify(updatedChat) !== JSON.stringify(selectedChat)
+    ) {
+      setSelectedChat(updatedChat);
+    }
+  }, [chats]);
 
   useEffect(() => {
     if (!selectedChat?.id) return;
@@ -118,7 +142,15 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     setOtherUser(user);
   };
 
-  const setTyping = () => {};
+  const setTyping = async (
+    selectedChat: ChatProps | null,
+    isTyping: boolean,
+  ) => {
+    if (!appUser?.uid || !selectedChat) return;
+
+    await updateTypingUser(appUser?.uid, selectedChat, isTyping);
+    setIsTyping(isTyping);
+  };
 
   return (
     <ChatContext.Provider
