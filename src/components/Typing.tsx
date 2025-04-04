@@ -53,7 +53,7 @@ export default function Typing({ isTyping, userName }: TypingProps) {
       <img
         className="h-6 w-6 rounded-full object-cover"
         src={`https://ui-avatars.com/api/?name=${userName}&background=5D5FEF&color=fff`}
-        alt={userName}
+        alt={userName || "username"}
       />
       <span className="text-3xl opacity-70">
         <TypingDots />
