@@ -20,6 +20,7 @@ export default function Sidebar() {
 
   const [modalOpen, setModalOpen] = useState(false);
   const [usernames, setUsernames] = useState<{ [key: string]: string }>({});
+  const [searchTerm, setSearchTerm] = useState("");
 
   const handleModal = () => {
     setModalOpen(!modalOpen);
@@ -52,14 +53,18 @@ export default function Sidebar() {
   }, [chats, appUser?.uid]);
 
   return (
-    <aside className="flex h-[80vh] w-96 flex-col gap-6 rounded-lg bg-surface p-6 shadow-sm">
-      <h2 className="text-xl font-semibold text-text-primary">Mensagens</h2>
+    <aside
+      className={`flex h-[80vh] flex-col gap-6 rounded-lg bg-surface p-6 shadow-sm md:w-96`}
+    >
+      <h2 className="text-xl font-semibold text-text-primary">Conversas</h2>
 
-      <div className="flex items-center gap-2">
+      <div className="flex w-full items-center gap-2">
         <Input
           type="text"
           placeholder="Pesquisar..."
           icon={<Search size={16} />}
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
         />{" "}
         <button
           onClick={handleModal}
@@ -71,25 +76,30 @@ export default function Sidebar() {
 
       <div className="mt-2 flex-1 space-y-1 overflow-y-auto pr-1">
         {chats.length !== 0 ? (
-          chats.map((chat) => {
-            if (chat.lastMessage) {
-              const username = usernames[chat.id] || "Carregando...";
-              const isActive = selectedChat?.id === chat.id;
-              const unreadCountMessages = getUnreadCountMessages(chat);
+          chats
+            .filter((chat) => {
+              const username = usernames[chat.id]?.toLowerCase() || "";
+              return username.includes(searchTerm.toLowerCase());
+            })
+            .map((chat) => {
+              if (chat.lastMessage) {
+                const username = usernames[chat.id] || "Carregando...";
+                const isActive = selectedChat?.id === chat.id;
+                const unreadCountMessages = getUnreadCountMessages(chat);
 
-              return (
-                <ChatItem
-                  key={chat.id}
-                  name={username}
-                  timestamp={chat.lastMessageTime}
-                  lastMessage={chat.lastMessage}
-                  onClick={() => selectChat(chat)}
-                  unread={unreadCountMessages}
-                  isActive={isActive}
-                />
-              );
-            }
-          })
+                return (
+                  <ChatItem
+                    key={chat.id}
+                    name={username}
+                    timestamp={chat.lastMessageTime}
+                    lastMessage={chat.lastMessage}
+                    onClick={() => selectChat(chat)}
+                    unread={unreadCountMessages}
+                    isActive={isActive}
+                  />
+                );
+              }
+            })
         ) : (
           <p className="text-sm italic text-text-secondary">
             Nenhum chat encontrado

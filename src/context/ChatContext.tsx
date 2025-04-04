@@ -31,7 +31,7 @@ interface ChatContextProps {
   selectedChat: ChatProps | null;
   isTyping: boolean;
   createChat: (targetUser: AppUserProps) => Promise<void>;
-  selectChat: (chat: ChatProps) => void;
+  selectChat: (chat: ChatProps | null) => void;
   sendMessage: (message: string) => void;
   changeOtherUser: (user: AppUserProps) => void;
   setTyping: (selectedChat: ChatProps | null, isTyping: boolean) => void;
@@ -62,7 +62,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
 
   useLoadChats(appUser, setChats);
   useLoadOtherUser(appUser, selectedChat, setOtherUser);
-  useAutoSelectFirstChat(chats, selectedChat, setSelectedChat);
+  //useAutoSelectFirstChat(chats, selectedChat, setSelectedChat);
   useLoadMessages(selectedChat, setMessages);
   useSyncSelectedChat(chats, selectedChat, setSelectedChat);
 
@@ -98,7 +98,13 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     return count;
   };
 
-  const selectChat = async (chatSelected: ChatProps) => {
+  const selectChat = async (chatSelected: ChatProps | null) => {
+    if (!chatSelected) {
+      console.log("mostrar chats");
+      setSelectedChat(null);
+      return;
+    }
+
     await markMessagesAsRead(chatSelected.id, appUser?.uid);
     setSelectedChat(chatSelected);
   };
