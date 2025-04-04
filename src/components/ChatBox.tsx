@@ -1,7 +1,7 @@
 import { Info, Send } from "lucide-react";
 import { ChatMessages } from "./ChatMessages";
 import { Input } from "./Input";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useChat } from "@/context/ChatContext";
 import Typing from "./Typing";
 import { useAuth } from "@/context/AuthContext";
@@ -9,7 +9,8 @@ import { useTypingStatus } from "@/hooks/useTypingStatus";
 
 export function ChatBox() {
   const { appUser } = useAuth();
-  const { otherUser, messages, sendMessage, selectedChat } = useChat();
+  const { otherUser, messages, sendMessage, selectedChat, readMessages } =
+    useChat();
 
   const [message, setMessage] = useState("");
   const { startTyping, stopTyping } = useTypingStatus(selectedChat);
@@ -27,6 +28,12 @@ export function ChatBox() {
     stopTyping();
   };
 
+  const handleReadMessages = () => {
+    if (!selectedChat || !appUser) return;
+
+    readMessages(selectedChat.id, appUser?.uid);
+  };
+
   const otherUserId = selectedChat?.users.find((id) => id !== appUser?.uid);
   const isOtherUserTyping = selectedChat?.typing?.[otherUserId ?? ""] || false;
 
@@ -36,7 +43,7 @@ export function ChatBox() {
         <div className="flex items-center gap-3">
           <img
             src={`https://ui-avatars.com/api/?name=${otherUser?.nome}&background=5D5FEF&color=fff`}
-            alt=""
+            alt={`${otherUser?.nome}`}
             className="h-12 w-12 rounded-full border border-border object-cover"
           />
           <div className="flex flex-col">
@@ -69,6 +76,7 @@ export function ChatBox() {
           onKeyDown={(e) => {
             if (e.key === "Enter") handleSendMessage();
           }}
+          onClick={handleReadMessages}
           value={message}
           rightIcon={
             <button

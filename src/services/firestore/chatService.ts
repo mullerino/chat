@@ -1,5 +1,5 @@
 import { firestore } from "@/lib/firebase"
-import { collection, doc, DocumentData, getDoc, getDocs, onSnapshot, query, QuerySnapshot, serverTimestamp, setDoc, Timestamp, updateDoc, where } from "firebase/firestore"
+import { collection, doc, DocumentData, getDoc, getDocs, increment, onSnapshot, query, QuerySnapshot, serverTimestamp, setDoc, Timestamp, updateDoc, where } from "firebase/firestore"
 import { chatConverter } from "../firebase/converter/chatConverter"
 import { ChatProps } from "@/types/Chat"
 import { AppUserProps } from "@/types/User"
@@ -54,12 +54,43 @@ export const getAllChatsUser = async (userUid: string) => {
   return snapshot.docs.map((doc) => doc.data())
 }
 
+export const updateUnreadMessages = async (chat: ChatProps, userId: string) => {
+  const otherUserId = chat.users.find(id => id !== userId)
+
+  const chatReference = chatRef(chat.id)
+
+  await updateDoc(chatReference, {
+    [`unreadCountByUser.${otherUserId}`]: increment(1)
+  })
+}
+
 export const updateTypingUser = async (userUid: string, chat: ChatProps, isTyping: boolean) => {
   const ref = chatRef(chat.id)
 
   await updateDoc(ref, {
     [`typing.${userUid}`] : isTyping
   })
+}
+
+export const getExistingChats = async(currentUid: string | null): Promise<string[]> => {
+  if (!currentUid) return [];
+
+  const existingChats: string[] = [];
+  
+  const snapshot = await getDocs(chatCollectionConverted);
+  
+  snapshot.docs.forEach((doc) => {
+    const chat = doc.data() as ChatProps;
+    if (chat.users.includes(currentUid)) {
+      const otherUserUid = chat.users.find((uid) => uid !== currentUid);
+      
+      if (otherUserUid) {
+        existingChats.push(otherUserUid);
+      }
+    }
+  });
+
+  return existingChats;
 }
 
 export const listenChatsUser = (userUid: string, callback: (chats: ChatProps[]) => void) => {
@@ -71,8 +102,7 @@ export const listenChatsUser = (userUid: string, callback: (chats: ChatProps[]) 
       ...doc.data()
     })) as ChatProps[]
 
-    callback(chats);
-
+    callback(chats)
   })
 
   return unsubscribe
