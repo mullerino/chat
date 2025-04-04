@@ -16,7 +16,7 @@ export default function Login() {
     if (user) {
       router.push("/chat");
     }
-  }, [user]);
+  }, [user, router]);
 
   const [isLogin, setisLogin] = useState(true);
   const [name, setName] = useState("");
@@ -28,7 +28,11 @@ export default function Login() {
   };
 
   const submitForm = async () => {
-    isLogin ? handleLogin() : handleRegister();
+    if (isLogin) {
+      await handleLogin();
+    } else {
+      await handleRegister();
+    }
   };
 
   const handleLogin = async () => {
@@ -92,7 +96,7 @@ export default function Login() {
               />
 
               <p className="mt-4 text-center text-sm text-text-secondary">
-                {isLogin ? "Não possui sua conta?" : "Ja possui uma conta?"}{" "}
+                {isLogin ? "Não possui sua conta?" : "Já possui uma conta?"}{" "}
                 <a
                   className="cursor-pointer font-medium text-primary hover:underline"
                   onClick={() => toogleLoginMode()}
