@@ -97,10 +97,24 @@ export const listenChatsUser = (userUid: string, callback: (chats: ChatProps[]) 
   const q = query(chatCollectionConverted, where("users", "array-contains", userUid))
 
   const unsubscribe = onSnapshot(q, (snapshot: QuerySnapshot<DocumentData>) => {
-    const chats = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data()
-    })) as ChatProps[]
+    const chats = (snapshot.docs
+      .map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }) as ChatProps)
+      .sort((a, b) => {
+        const aTime =
+        a.lastMessageTime instanceof Date
+          ? a.lastMessageTime
+          : a.lastMessageTime?.toDate?.() ?? new Date(0);
+  
+        const bTime =
+          b.lastMessageTime instanceof Date
+            ? b.lastMessageTime
+            : b.lastMessageTime?.toDate?.() ?? new Date(0);
+        
+        return bTime.getTime() - aTime.getTime();
+      })) as ChatProps[];
 
     callback(chats)
   })
