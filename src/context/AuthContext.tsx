@@ -62,7 +62,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setLoading(true);
     const newUser = await registerUser(email, password);
 
-    const uid = newUser.uid;
+    const uid = newUser?.uid;
+
+    if (!uid) return;
+
     const newAppUser: NewAppUserProps = {
       uid,
       nome: name,
@@ -76,11 +79,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async ({ email, password }: LoginProps) => {
     setLoading(true);
-    const { appUser, firebaseUser } = await loginUser({ email, password });
 
-    setUser(firebaseUser);
-    setAppUser(appUser);
-    setLoading(false);
+    try {
+      const { appUser, firebaseUser } = await loginUser({ email, password });
+
+      setUser(firebaseUser);
+      setAppUser(appUser);
+      setLoading(false);
+    } catch (e) {
+      throw e;
+    } finally {
+      setLoading(false);
+    }
   };
 
   const logout = async () => {
