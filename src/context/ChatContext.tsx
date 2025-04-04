@@ -20,7 +20,6 @@ import {
 import { MessageFirebaseProps } from "@/types/Message";
 import { useLoadChats } from "@/hooks/useLoadChats";
 import { useLoadOtherUser } from "@/hooks/useLoadOtherUser";
-import { useAutoSelectFirstChat } from "@/hooks/useAutoSelectFirstChat";
 import { useLoadMessages } from "@/hooks/useLoadMessages";
 import { useSyncSelectedChat } from "@/hooks/useSyncSelectedChat";
 
@@ -62,7 +61,6 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
 
   useLoadChats(appUser, setChats);
   useLoadOtherUser(appUser, selectedChat, setOtherUser);
-  //useAutoSelectFirstChat(chats, selectedChat, setSelectedChat);
   useLoadMessages(selectedChat, setMessages);
   useSyncSelectedChat(chats, selectedChat, setSelectedChat);
 
