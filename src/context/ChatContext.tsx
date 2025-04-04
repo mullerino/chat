@@ -10,28 +10,33 @@ import {
 import { useAuth } from "./AuthContext";
 import {
   createChatWithUser,
-  listenChatsUser,
   updateTypingUser,
+  updateUnreadMessages,
 } from "@/services/firestore/chatService";
 import {
-  listenMessages,
+  markMessagesAsRead,
   sendMessage,
 } from "@/services/firestore/messageService";
 import { MessageFirebaseProps } from "@/types/Message";
-import { getAppUserDoc } from "@/services/firestore/userService";
+import { useLoadChats } from "@/hooks/useLoadChats";
+import { useLoadOtherUser } from "@/hooks/useLoadOtherUser";
+import { useAutoSelectFirstChat } from "@/hooks/useAutoSelectFirstChat";
+import { useLoadMessages } from "@/hooks/useLoadMessages";
+import { useSyncSelectedChat } from "@/hooks/useSyncSelectedChat";
 
 interface ChatContextProps {
   chats: ChatProps[];
   otherUser: AppUserProps | null;
-  changeOtherUser: (user: AppUserProps) => void;
   messages: MessageFirebaseProps[];
   selectedChat: ChatProps | null;
   isTyping: boolean;
-  unreadCount: { [chatId: string]: number } | undefined;
   createChat: (targetUser: AppUserProps) => Promise<void>;
   selectChat: (chat: ChatProps) => void;
   sendMessage: (message: string) => void;
+  changeOtherUser: (user: AppUserProps) => void;
   setTyping: (selectedChat: ChatProps | null, isTyping: boolean) => void;
+  getUnreadCountMessages: (selectedChat: ChatProps | null) => number;
+  readMessages: (chatId: string, userId: string | undefined) => void;
 }
 
 const ChatContext = createContext<ChatContextProps | null>(null);
@@ -44,69 +49,22 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
   const [selectedChat, setSelectedChat] = useState<ChatProps | null>(null);
   const [isTyping, setIsTyping] = useState<boolean>(false);
   const [otherUser, setOtherUser] = useState<AppUserProps | null>(null);
-  const [unreadCount, setUnreadCount] = useState<{
-    [chatId: string]: number;
-  }>();
 
   useEffect(() => {
     if (!appUser?.uid) return;
 
+    setChats([]);
     setSelectedChat(null);
     setMessages([]);
     setIsTyping(false);
     setOtherUser(null);
   }, [appUser?.uid]);
 
-  useEffect(() => {
-    if (selectedChat) {
-      const getOtherUser = async () => {
-        const userId = selectedChat.users.find((user) => user !== appUser?.uid);
-        if (userId) {
-          const user = await getAppUserDoc(userId);
-          setOtherUser(user);
-        }
-      };
-      getOtherUser();
-    }
-  }, [selectedChat]);
-
-  useEffect(() => {
-    if (!appUser?.uid) return;
-
-    const unsubscribe = listenChatsUser(appUser.uid, (chatsUser) => {
-      setChats(chatsUser);
-    });
-
-    return () => unsubscribe();
-  }, [appUser?.uid]);
-
-  useEffect(() => {
-    if (!selectedChat && chats.length > 0) {
-      setSelectedChat(chats[0]);
-    }
-  }, [chats, selectedChat]);
-
-  useEffect(() => {
-    if (!selectedChat || chats.length === 0) return;
-
-    const updatedChat = chats.find((c) => c.id === selectedChat.id);
-    if (
-      updatedChat &&
-      JSON.stringify(updatedChat) !== JSON.stringify(selectedChat)
-    ) {
-      setSelectedChat(updatedChat);
-    }
-  }, [chats]);
-
-  useEffect(() => {
-    if (!selectedChat?.id) return;
-
-    const unsubscribe = listenMessages(selectedChat.id, (msgs) => {
-      setMessages(msgs);
-    });
-
-    return () => unsubscribe();
-  }, [selectedChat?.id]);
+  useLoadChats(appUser, setChats);
+  useLoadOtherUser(appUser, selectedChat, setOtherUser);
+  useAutoSelectFirstChat(chats, selectedChat, setSelectedChat);
+  useLoadMessages(selectedChat, setMessages);
+  useSyncSelectedChat(chats, selectedChat, setSelectedChat);
 
   const createChat = async (targetUser: AppUserProps): Promise<void> => {
     if (!appUser) throw new Error("Usuário não autenticado");
@@ -117,7 +75,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     setSelectedChat(newChat);
   };
 
-  const sendMessageUser = async (message: string) => {
+  const sendMessageAndUpdateUnreadCount = async (message: string) => {
     if (!selectedChat?.id || !appUser)
       throw new Error("Usuário ou chat não encontrado!");
 
@@ -126,16 +84,23 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
       chatId: selectedChat?.id,
       user: appUser,
     });
+
+    await updateUnreadMessages(selectedChat, appUser.uid);
   };
 
-  const changeOtherUserById = async (userId: string) => {
-    const user = await getAppUserDoc(userId);
-    setOtherUser(user);
+  const getUnreadCountMessages = (chat?: ChatProps | null): number => {
+    if (!appUser) return 0;
+
+    const unreadCount = chat?.unreadCountByUser;
+
+    const count = unreadCount ? unreadCount[appUser?.uid] : 0;
+
+    return count;
   };
 
-  const selectChat = (chatSelected: ChatProps) => {
+  const selectChat = async (chatSelected: ChatProps) => {
+    await markMessagesAsRead(chatSelected.id, appUser?.uid);
     setSelectedChat(chatSelected);
-    changeOtherUserById(chatSelected.users[1]);
   };
 
   const changeOtherUser = (user: AppUserProps) => {
@@ -160,11 +125,12 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
         messages,
         selectedChat,
         isTyping,
-        unreadCount,
+        readMessages: markMessagesAsRead,
+        getUnreadCountMessages,
         changeOtherUser,
         createChat,
         selectChat,
-        sendMessage: sendMessageUser,
+        sendMessage: sendMessageAndUpdateUnreadCount,
         setTyping,
       }}
     >
