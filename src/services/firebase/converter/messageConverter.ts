@@ -1,11 +1,17 @@
-import { MessageFirebaseProps, MessageProps } from "@/types/Message";
+import { MessageFirebaseProps } from "@/types/Message";
 import { FirestoreDataConverter, Timestamp } from "firebase/firestore";
 
 export const messageConverter: FirestoreDataConverter<MessageFirebaseProps> = {
   toFirestore: (message) => {
+    const time = message.time instanceof Timestamp
+    ? message.time
+    : message.time instanceof Date
+    ? Timestamp.fromDate(message.time)
+    : Timestamp.fromDate(new Date()); 
+
     return {
       text: message.text,
-      time: message.time instanceof Timestamp ? message.time : Timestamp.fromDate(new Date(message.time)),
+      time: time,
       senderId: message.senderId,
       status: message.status || "sent",
     };
