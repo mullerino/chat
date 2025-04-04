@@ -27,7 +27,7 @@ export default function ListUsersModal({
     };
 
     fetchUsers();
-  }, [isOpen, userLogged]);
+  }, [isOpen, appUser?.uid, userLogged]);
 
   if (!isOpen) return null;
 
@@ -44,27 +44,33 @@ export default function ListUsersModal({
         </div>
 
         <div className="scrollbar-thin scrollbar-thumb-primary/50 scrollbar-thumb-rounded-md flex max-h-96 flex-col gap-2 overflow-y-auto pr-1">
-          {users.map((user) => (
-            <button
-              key={user.uid}
-              onClick={() => onSelectUser(user)}
-              className="flex items-center gap-3 rounded-md p-2 text-left transition hover:bg-background"
-            >
-              <img
-                src={`https://ui-avatars.com/api/?name=${user.nome}&background=5D5FEF&color=fff`}
-                alt=""
-                className="h-10 w-10 rounded-full object-cover"
-              />
-              <div className="flex flex-col">
-                <span className="text-sm font-medium text-text-primary">
-                  {user.nome}
-                </span>
-                <span className="text-xs text-text-secondary">
-                  {user.email}
-                </span>
-              </div>
-            </button>
-          ))}
+          {users.length !== 0 ? (
+            users.map((user) => (
+              <button
+                key={user.uid}
+                onClick={() => onSelectUser(user)}
+                className="flex items-center gap-3 rounded-md p-2 text-left transition hover:bg-background"
+              >
+                <img
+                  src={`https://ui-avatars.com/api/?name=${user.nome}&background=5D5FEF&color=fff`}
+                  alt={`${user.nome}`}
+                  className="h-10 w-10 rounded-full object-cover"
+                />
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium text-text-primary">
+                    {user.nome}
+                  </span>
+                  <span className="text-xs text-text-secondary">
+                    {user.email}
+                  </span>
+                </div>
+              </button>
+            ))
+          ) : (
+            <span className="text-sm text-text-primary">
+              Você já tem um chat aberto com todos os usuários!
+            </span>
+          )}
         </div>
       </div>
     </div>
