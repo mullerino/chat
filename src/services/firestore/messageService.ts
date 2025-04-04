@@ -1,15 +1,15 @@
 import { firestore } from "@/lib/firebase"
-import { addDoc, collection, DocumentData, getDocs, onSnapshot, orderBy, query, QuerySnapshot, Timestamp, updateDoc } from "firebase/firestore"
+import { addDoc, collection, doc, DocumentData, getDocs, onSnapshot, orderBy, query, QuerySnapshot, Timestamp, updateDoc, writeBatch } from "firebase/firestore"
 import { messageConverter } from "../firebase/converter/messageConverter"
 import { MessageFirebaseProps, SendMessageProps } from "@/types/Message"
 import { chatRef } from "./chatService"
 
-const messageCollection = (chatId: string) => {
+const messagesCollection = (chatId: string) => {
   return collection(firestore, "chats", chatId, "messages").withConverter(messageConverter)
 }
 
 export const sendMessage = async ({ message, chatId, user }: SendMessageProps): Promise<MessageFirebaseProps>=> {
-  const ref = messageCollection(chatId)
+  const ref = messagesCollection(chatId)
 
   const newMessage = {
     text: message,
@@ -33,7 +33,7 @@ export const sendMessage = async ({ message, chatId, user }: SendMessageProps): 
 
 export const getMessages = async (chatId: string | undefined): Promise<MessageFirebaseProps[]> => {
   if(chatId) {
-    const collectionRef = messageCollection(chatId)
+    const collectionRef = messagesCollection(chatId)
     const q = query(collectionRef, orderBy("time", "asc"))
   
     const snapshot = await getDocs(q)
@@ -47,7 +47,7 @@ export const getMessages = async (chatId: string | undefined): Promise<MessageFi
 }
 
 export const listenMessages = (chatId: string, callback: (messages: MessageFirebaseProps[]) => void) => {
-  const collectionRef = messageCollection(chatId)
+  const collectionRef = messagesCollection(chatId)
   const q = query(collectionRef, orderBy("time", "asc"))
 
   const unsubscribe = onSnapshot(q, (snapshot: QuerySnapshot<DocumentData>) => {
@@ -61,3 +61,26 @@ export const listenMessages = (chatId: string, callback: (messages: MessageFireb
 
   return unsubscribe
 }
+
+export const markMessagesAsRead = async (chatId: string, userUid: string | undefined) => {
+  const messagesSnapshot = await getDocs(messagesCollection(chatId));
+
+  const batch = writeBatch(firestore);
+
+  messagesSnapshot.forEach((messageDoc) => {
+    const messageData = messageDoc.data() as MessageFirebaseProps;
+
+    if (messageData.status === 'sent' && messageData.senderId !== userUid) {
+      const messageRef = doc(firestore, "chats", chatId, "messages", messageDoc.id);
+      batch.update(messageRef, { status: 'read' });   
+    }
+  });
+
+  const unreadCountRef = chatRef(chatId);
+
+  batch.update(unreadCountRef, {
+    [`unreadCountByUser.${userUid}`]: 0
+  });
+
+  await batch.commit();
+};
