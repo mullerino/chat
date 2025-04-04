@@ -2,11 +2,18 @@
 import { ChatBox } from "@/components/ChatBox";
 import { PrivateRoute } from "@/components/PrivateRoute";
 import Sidebar from "@/components/Sidebar";
+import UsersDetailsModal from "@/components/UserDetailsModal";
 import { useAuth } from "@/context/AuthContext";
 import { LogOut, User } from "lucide-react";
+import { useState } from "react";
 
 export default function Chat() {
   const { appUser, logout } = useAuth();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const toggleModal = () => {
+    setIsModalOpen(!isModalOpen);
+  };
 
   return (
     <PrivateRoute>
@@ -15,6 +22,7 @@ export default function Chat() {
           <span className="text-sm text-white">{appUser?.nome}</span>
           <User
             size={22}
+            onClick={() => toggleModal()}
             className="cursor-pointer text-white transition hover:text-white/80"
           />
           <LogOut
@@ -28,6 +36,10 @@ export default function Chat() {
           <ChatBox />
         </main>
       </div>
+
+      {isModalOpen && (
+        <UsersDetailsModal isOpen={isModalOpen} onClose={toggleModal} />
+      )}
     </PrivateRoute>
   );
 }
