@@ -9,7 +9,14 @@ import { useAuth } from "@/context/AuthContext";
 
 export default function Sidebar() {
   const { appUser } = useAuth();
-  const { changeOtherUser, chats, selectChat, createChat } = useChat();
+  const {
+    changeOtherUser,
+    chats,
+    selectedChat,
+    getUnreadCountMessages,
+    selectChat,
+    createChat,
+  } = useChat();
 
   const [modalOpen, setModalOpen] = useState(false);
   const [usernames, setUsernames] = useState<{ [key: string]: string }>({});
@@ -42,7 +49,7 @@ export default function Sidebar() {
     };
 
     fetchUsernames();
-  }, [chats]);
+  }, [chats, appUser?.uid]);
 
   return (
     <aside className="flex h-[80vh] w-96 flex-col gap-6 rounded-lg bg-surface p-6 shadow-sm">
@@ -67,6 +74,9 @@ export default function Sidebar() {
           chats.map((chat) => {
             if (chat.lastMessage) {
               const username = usernames[chat.id] || "Carregando...";
+              const isActive = selectedChat?.id === chat.id;
+              const unreadCountMessages = getUnreadCountMessages(chat);
+
               return (
                 <ChatItem
                   key={chat.id}
@@ -74,6 +84,8 @@ export default function Sidebar() {
                   timestamp={chat.lastMessageTime}
                   lastMessage={chat.lastMessage}
                   onClick={() => selectChat(chat)}
+                  unread={unreadCountMessages}
+                  isActive={isActive}
                 />
               );
             }
