@@ -6,7 +6,6 @@ export default function Message({
   text,
   time,
   senderId,
-  status,
 }: MessageFirebaseProps) {
   const { appUser } = useAuth();
 
@@ -24,7 +23,6 @@ export default function Message({
       >
         <p className="text-sm">{text}</p>
       </div>
-
       <span className="mt-1 text-xs text-text-secondary">
         {formatTime(time)}
       </span>
