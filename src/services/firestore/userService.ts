@@ -4,14 +4,13 @@ import {
   doc,
   setDoc,
   getDoc,
-  updateDoc,
   serverTimestamp,
   Timestamp,
   getDocs,
-  query,
   collection,
 } from "firebase/firestore";
 import { userConverter } from "../firebase/converter/userConverter";
+import { getExistingChats } from "./chatService";
 
 const userRef = (uid: string) => {
   return doc(firestore, "users", uid).withConverter(userConverter)
@@ -40,8 +39,18 @@ export const getAppUserDoc = async (uid: string): Promise<AppUserProps> => {
 
 export const getAllAppUsers = async (currentUid: string | null): Promise<AppUserProps[]> => {
   const snapshot = await getDocs(userCollectionConverted);
-  return snapshot.docs
+
+  const allUsers = snapshot.docs
     .map((doc) => doc.data())
     .filter((user) => user.uid !== currentUid)
+  
+  const filteredUsers = allUsers.filter((user) => user.uid !== currentUid);
+
+  const existingChats = await getExistingChats(currentUid);
+
+  const usersWithoutChats = filteredUsers.filter((user) => !existingChats.includes(user.uid));
+
+  return usersWithoutChats;
+
 }
   
